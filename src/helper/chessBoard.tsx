@@ -1,4 +1,4 @@
-import { useState, ReactElement, useEffect, useRef } from "react";
+import React, { useState, ReactElement, useEffect, useRef } from "react";
 import EachBox from "./eachBox";
 
 const GridSize = 81;
@@ -6,7 +6,7 @@ const GridSize = 81;
 export default function ChessBoard() {
     const [boardArray, setBoardArray] = useState<ReactElement[][]>([]);
     const [activePiece, setActivePiece] = useState<HTMLElement | null>(null);
-    // const [grabPosition, setGrabPosition] = useState<{ x: number, y: number } | null>(null);
+    const [grabPosition, setGrabPosition] = useState<{ x: number, y: number } | null>(null);
     const chessBoardRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
@@ -16,20 +16,21 @@ export default function ChessBoard() {
     function grabPiece(e: React.MouseEvent) {
         const element = e.target as HTMLElement;
         const chessboard = chessBoardRef.current;
-        if (chessboard) {
+        console.log(element)
+        if (element.id === "chess-piece" && chessboard) {
             const grabX = Math.floor((e.clientX - chessboard.offsetLeft) / GridSize);
-            const grabY = Math.abs(Math.ceil((e.clientY - chessboard.offsetTop - (GridSize*8)) / GridSize));
+            const grabY = Math.abs(Math.floor((e.clientY - chessboard.offsetTop ) / GridSize));
 
             element.style.position = "absolute";
             console.log(element)
             // element.style.zIndex = "100"
             // element.style.left = `${x}px`;
             // element.style.top = `${y}px`;
-            const x = e.clientX-(GridSize/2);
-            const y = e.clientY-(GridSize/2);
+            // const x = e.clientX-(GridSize/2);
+            // const y = e.clientY-(GridSize/2);
 
-            console.log(x,y)
-            console.log(grabX,grabY)
+            // console.log(x,y)
+            setGrabPosition({x:grabX,y:grabY})
             setActivePiece(element)
         }
 
@@ -37,10 +38,10 @@ export default function ChessBoard() {
 
     function movePiece(e: React.MouseEvent) {
         const chessboard = chessBoardRef.current;
-        console.log(activePiece,chessboard)
+        // console.log(activePiece,chessboard)
         if (activePiece && chessboard) {
-            // console.log(x,y)
-            // console.log(activePiece.style.left,activePiece.style.top)
+            // console.log(e.clientX,e.clientY)
+            // console.log(activePiece.style.left,activePiece.style.top,activePiece)
                 const minX = chessboard.offsetLeft-(GridSize/4);
                 const minY = chessboard.offsetTop-(GridSize/4);
                 const maxX = chessboard.offsetLeft + chessboard.clientWidth - (GridSize*3/4);
@@ -67,8 +68,36 @@ export default function ChessBoard() {
         }
     }
 
-    function releasePiece() {
-        setActivePiece(null);
+    function releasePiece(e: React.MouseEvent) {
+        const chessboard = chessBoardRef.current;
+        if (activePiece && chessboard && grabPosition) {
+            const x = Math.floor((e.clientX - chessboard.offsetLeft) / GridSize);
+            const y = Math.abs(Math.floor((e.clientY - chessboard.offsetTop) / GridSize));
+
+            // Swap the pieces in the board array
+            const newBoardArray = [...boardArray];
+            console.log(x,y)
+            console.log(newBoardArray[y][x])
+            const piece = newBoardArray[grabPosition.y][grabPosition.x].props.children;
+            newBoardArray[grabPosition.y][grabPosition.x] = (
+                <EachBox
+                    uniqKey={newBoardArray[grabPosition.y][grabPosition.x].props.uniqKey}
+                    isWhiteSquare={newBoardArray[grabPosition.y][grabPosition.x].props.isWhiteSquare}
+                >
+                </EachBox>
+            );
+            newBoardArray[y][x] = (
+                <EachBox
+                    uniqKey={newBoardArray[y][x].props.uniqKey}
+                    isWhiteSquare={newBoardArray[y][x].props.isWhiteSquare}
+                >
+                    {piece}
+                </EachBox>
+            );
+
+            setBoardArray(newBoardArray);
+            setActivePiece(null);
+        }
     }
 
     function parseFEN(str: string) {
@@ -96,6 +125,7 @@ export default function ChessBoard() {
                                 <div
                                     style={{ backgroundImage: `url(/assets/w${char}.png)` }}
                                     className="w-[80px] h-[80px] bg-no-repeat bg-center cursor-grab active:cursor-grabbing"
+                                    id="chess-piece"
                                 ></div>
                             </EachBox>
                         );
@@ -115,7 +145,7 @@ export default function ChessBoard() {
                                 <div
                                     style={{ backgroundImage: `url(/assets/b${char.toUpperCase()}.png)` }}
                                     className="w-[80px] h-[80px] bg-no-repeat bg-center cursor-grab active:cursor-grabbing"
-                                    
+                                    id="chess-piece"
                                 ></div>
                             </EachBox>
                         );
@@ -133,7 +163,7 @@ export default function ChessBoard() {
                         for (let i = 0; i < emptySquares; i++) {
                             currentRow.push(
                                 <EachBox
-                                    uniqKey={`e${row}${col}${i}`}
+                                    uniqKey={`e${row}${i}`}
                                     isWhiteSquare={isWhiteSquare}
                                 >
                                 </EachBox>
@@ -160,7 +190,7 @@ export default function ChessBoard() {
                     <div key={index} className="w-full h-full hover:border hover:border-chess-whiteBg" onMouseDown={grabPiece}
                     onMouseMove={movePiece}
                     onMouseUp={releasePiece}
-                    id="chess-piece">
+                    >
                         {item}
                     </div>
                 ))}
