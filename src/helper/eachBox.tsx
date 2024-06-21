@@ -1,15 +1,9 @@
 
-
-interface eachBox{
-    blackBackGroundColour:boolean;
-    peice:string;
-}
-export default function EachBox({blackBackGroundColour,peice}:eachBox){
+export default function EachBox({children,uniqKey,isWhiteSquare}:{children?:React.ReactNode,uniqKey:string,isWhiteSquare:boolean}){
+    
     return(
-        blackBackGroundColour ? (<div className="w-2 h-2 bg-chess-black">
-            <img src={peice} alt="Peice" width={10} height={10}/>
-        </div>) : <div className="w-2 h-2 bg-chess-white">
-        <img src={peice} alt="Peice" width={10} height={10}/>
-    </div>
+        <div key={uniqKey} className={`w-full h-full ${isWhiteSquare ? 'bg-chess-whiteBg' : 'bg-chess-blackBg'}`}>
+            {children}
+        </div>
     )
 }

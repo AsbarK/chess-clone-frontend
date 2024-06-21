@@ -1,100 +1,166 @@
-import { useState,ReactElement, useEffect } from "react";
+import { useState, ReactElement, useEffect, useRef } from "react";
+import EachBox from "./eachBox";
+
+const GridSize = 81;
 
 export default function ChessBoard() {
-    useEffect(()=>{
-        parseFEN("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR")
-    },[])
-    const [boardArray,setBoardArray] = useState<ReactElement[]>([])
-    // const createRow = (isEvenRow:boolean) => {
-    //     const squares = [];
-    //     for (let i = 0; i < 8; i++) {
-    //         const isEvenSquare = i % 2 === 0;
-    //         const isWhiteSquare = isEvenRow ? isEvenSquare : !isEvenSquare;
-    //         squares.push(
-    //             <div
-    //                 key={i}
-    //                 className={`w-full h-full ${
-    //                     isWhiteSquare ? 'bg-chess-whiteBg' : 'bg-chess-blackBg'
-    //                 } border border-black`}
-    //             ></div>
-    //         );
-    //     }
-    //     return squares;
-    // };
-    function grabPeice(e:React.MouseEvent){
-        console.log(e.target)
-    }
-    function parseFEN(str:string){
-        const board = []
-        const innerBoard = []
-        let isWhiteSquare:boolean = true
-        for (let i = 0; i < str.length; i++){
-            switch (str[i]) {
-                case "R":
-                case "K":
-                case "B":
-                case "N":
-                case "P":
-                case "Q":
-                    board.push(<div
-                        key={`w${str[i]},${i}`}
-                        className={`w-full h-full  ${
-                            isWhiteSquare ? 'bg-chess-whiteBg' : 'bg-chess-blackBg'
-                        }`}
-                    >
-                        <div style={{backgroundImage:`url(/assets/w${str[i]}.png)`}} className="w-full h-full bg-no-repeat bg-center cursor-grab active:cursor-grabbing" onMouseDown={grabPeice}></div>
-                        </div>)
-                    break;     
-                case "r":
-                case "k":
-                case "b":
-                case "n":
-                case "p":
-                case "q":
-                    board.push(<div
-                        key={`b${str[i]},${i}`}
-                        className={`w-full h-full  ${
-                            isWhiteSquare ? 'bg-chess-whiteBg' : 'bg-chess-blackBg'
-                        }`}
-                    >
-                        <div style={{backgroundImage:`url(/assets/b${str[i].toUpperCase()}.png)`}} className="w-full h-full bg-no-repeat bg-center cursor-grab active:cursor-grabbing" onMouseDown={grabPeice}></div>
-                        {/* <img src={`/assets/b${str[i].toUpperCase()}.png`} className=""/> */}
-                    </div>)
-                    break;
-                case "1":     
-                case "2":     
-                case "3":     
-                case "4":     
-                case "5":     
-                case "6":     
-                case "7":     
-                case "8":
-                        for(let j =0;j<Number(str[i]);j++){
-                            board.push(<div
-                                key={`${str[i]},${i},${j}`}
-                                className={`w-full h-full ${
-                                    isWhiteSquare ? 'bg-chess-whiteBg' : 'bg-chess-blackBg'
-                                }`}
-                            ></div>)
-                            isWhiteSquare = !isWhiteSquare
-                        }
-                        isWhiteSquare = !isWhiteSquare
-                    break; 
-                default:
-                    break;
-            }
-            isWhiteSquare = !isWhiteSquare
+    const [boardArray, setBoardArray] = useState<ReactElement[][]>([]);
+    const [activePiece, setActivePiece] = useState<HTMLElement | null>(null);
+    // const [grabPosition, setGrabPosition] = useState<{ x: number, y: number } | null>(null);
+    const chessBoardRef = useRef<HTMLDivElement>(null);
+
+    useEffect(() => {
+        parseFEN("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR");
+    }, []);
+
+    function grabPiece(e: React.MouseEvent) {
+        const element = e.target as HTMLElement;
+        const chessboard = chessBoardRef.current;
+        if (chessboard) {
+            const grabX = Math.floor((e.clientX - chessboard.offsetLeft) / GridSize);
+            const grabY = Math.abs(Math.ceil((e.clientY - chessboard.offsetTop - (GridSize*8)) / GridSize));
+
+            element.style.position = "absolute";
+            console.log(element)
+            // element.style.zIndex = "100"
+            // element.style.left = `${x}px`;
+            // element.style.top = `${y}px`;
+            const x = e.clientX-(GridSize/2);
+            const y = e.clientY-(GridSize/2);
+
+            console.log(x,y)
+            console.log(grabX,grabY)
+            setActivePiece(element)
         }
-        setBoardArray(board)
-        return true
+
+    }
+
+    function movePiece(e: React.MouseEvent) {
+        const chessboard = chessBoardRef.current;
+        console.log(activePiece,chessboard)
+        if (activePiece && chessboard) {
+            // console.log(x,y)
+            // console.log(activePiece.style.left,activePiece.style.top)
+                const minX = chessboard.offsetLeft-(GridSize/4);
+                const minY = chessboard.offsetTop-(GridSize/4);
+                const maxX = chessboard.offsetLeft + chessboard.clientWidth - (GridSize*3/4);
+                const maxY = chessboard.offsetTop + chessboard.clientHeight - (GridSize*3/4);
+                const x = e.clientX - GridSize / 2;
+                const y = e.clientY - GridSize / 2;
+                activePiece.style.position = "absolute";
+    
+                if (x < minX) {
+                    activePiece.style.left = `${minX}px`;
+                } else if (x > maxX) {
+                    activePiece.style.left = `${maxX}px`;
+                } else {
+                    activePiece.style.left = `${x}px`;
+                }
+    
+                if (y < minY) {
+                    activePiece.style.top = `${minY}px`;
+                } else if (y > maxY) {
+                    activePiece.style.top = `${maxY}px`;
+                } else {
+                    activePiece.style.top = `${y}px`;
+                }
+        }
+    }
+
+    function releasePiece() {
+        setActivePiece(null);
+    }
+
+    function parseFEN(str: string) {
+        const rows = str.split('/');
+        const board: ReactElement[][] = [];
+
+        let isWhiteSquare = true;
+
+        for (let row = 0; row < rows.length; row++) {
+            const currentRow: ReactElement[] = [];
+            for (let col = 0; col < rows[row].length; col++) {
+                const char = rows[row][col];
+                switch (char) {
+                    case "R":
+                    case "K":
+                    case "B":
+                    case "N":
+                    case "P":
+                    case "Q":
+                        currentRow.push(
+                            <EachBox
+                                uniqKey={`w${char}${row}${col}`}
+                                isWhiteSquare={isWhiteSquare}
+                            >
+                                <div
+                                    style={{ backgroundImage: `url(/assets/w${char}.png)` }}
+                                    className="w-[80px] h-[80px] bg-no-repeat bg-center cursor-grab active:cursor-grabbing"
+                                ></div>
+                            </EachBox>
+                        );
+                        isWhiteSquare = !isWhiteSquare;
+                        break;
+                    case "r":
+                    case "k":
+                    case "b":
+                    case "n":
+                    case "p":
+                    case "q":
+                        currentRow.push(
+                            <EachBox
+                                uniqKey={`b${char}${row}${col}`}
+                                isWhiteSquare={isWhiteSquare}
+                            >
+                                <div
+                                    style={{ backgroundImage: `url(/assets/b${char.toUpperCase()}.png)` }}
+                                    className="w-[80px] h-[80px] bg-no-repeat bg-center cursor-grab active:cursor-grabbing"
+                                    
+                                ></div>
+                            </EachBox>
+                        );
+                        isWhiteSquare = !isWhiteSquare;
+                        break;
+                    case "1":
+                    case "2":
+                    case "3":
+                    case "4":
+                    case "5":
+                    case "6":
+                    case "7":
+                    case "8": {
+                        const emptySquares = parseInt(char, 10);
+                        for (let i = 0; i < emptySquares; i++) {
+                            currentRow.push(
+                                <EachBox
+                                    uniqKey={`e${row}${col}${i}`}
+                                    isWhiteSquare={isWhiteSquare}
+                                >
+                                </EachBox>
+                            );
+                            isWhiteSquare = !isWhiteSquare;
+                        }
+                        break;
+                    }
+                    default:
+                        break;
+                }
+            }
+            board.push(currentRow);
+            isWhiteSquare = !isWhiteSquare;
+        }
+
+        setBoardArray(board);
     }
 
     return (
-        
-        <div className="bg-chess-blackBg w-[700px] h-[700px]">
+        <div className="bg-chess-blackBg w-[648px] h-[648px] " ref={chessBoardRef}>
             <div className="grid grid-cols-8 grid-rows-8 w-full h-full">
-                {boardArray.map((item, index) => (
-                    <div key={index} className="w-full h-full">
+                {boardArray.flat().map((item, index) => (
+                    <div key={index} className="w-full h-full hover:border hover:border-chess-whiteBg" onMouseDown={grabPiece}
+                    onMouseMove={movePiece}
+                    onMouseUp={releasePiece}
+                    id="chess-piece">
                         {item}
                     </div>
                 ))}
