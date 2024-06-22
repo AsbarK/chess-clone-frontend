@@ -1,5 +1,6 @@
 import React, { useState, ReactElement, useEffect, useRef } from "react";
 import EachBox from "./eachBox";
+import { isValidMove } from "./chess/chessValidation";
 
 const GridSize = 81;
 
@@ -16,13 +17,13 @@ export default function ChessBoard() {
     function grabPiece(e: React.MouseEvent) {
         const element = e.target as HTMLElement;
         const chessboard = chessBoardRef.current;
-        console.log(element)
+        // console.log(element)
         if (element.id === "chess-piece" && chessboard) {
             const grabX = Math.floor((e.clientX - chessboard.offsetLeft) / GridSize);
             const grabY = Math.abs(Math.floor((e.clientY - chessboard.offsetTop ) / GridSize));
 
             element.style.position = "absolute";
-            console.log(element)
+            // console.log(element)
             // element.style.zIndex = "100"
             // element.style.left = `${x}px`;
             // element.style.top = `${y}px`;
@@ -74,28 +75,33 @@ export default function ChessBoard() {
             const x = Math.floor((e.clientX - chessboard.offsetLeft) / GridSize);
             const y = Math.abs(Math.floor((e.clientY - chessboard.offsetTop) / GridSize));
 
-            // Swap the pieces in the board array
             const newBoardArray = [...boardArray];
-            console.log(x,y)
-            console.log(newBoardArray[y][x])
-            const piece = newBoardArray[grabPosition.y][grabPosition.x].props.children;
-            newBoardArray[grabPosition.y][grabPosition.x] = (
-                <EachBox
-                    uniqKey={newBoardArray[grabPosition.y][grabPosition.x].props.uniqKey}
-                    isWhiteSquare={newBoardArray[grabPosition.y][grabPosition.x].props.isWhiteSquare}
-                >
-                </EachBox>
-            );
-            newBoardArray[y][x] = (
-                <EachBox
-                    uniqKey={newBoardArray[y][x].props.uniqKey}
-                    isWhiteSquare={newBoardArray[y][x].props.isWhiteSquare}
-                >
-                    {piece}
-                </EachBox>
-            );
-
-            setBoardArray(newBoardArray);
+            console.log(`${String.fromCharCode(97+x)}`,Math.abs(8-y))
+            console.log(`${String.fromCharCode(97+grabPosition.x)}`,Math.abs(8-grabPosition.y))
+            // console.log(newBoardArray[y][x])
+            if(isValidMove("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1",{"from":String(`${String.fromCharCode(97+grabPosition.x)}${Math.abs(8-grabPosition.y)}`),"to":String(`${String.fromCharCode(97+x)}${Math.abs(8-y)}`)})){
+                const piece = newBoardArray[grabPosition.y][grabPosition.x].props.children;
+                newBoardArray[grabPosition.y][grabPosition.x] = (
+                    <EachBox
+                        uniqKey={newBoardArray[grabPosition.y][grabPosition.x].props.uniqKey}
+                        isWhiteSquare={newBoardArray[grabPosition.y][grabPosition.x].props.isWhiteSquare}
+                    >
+                    </EachBox>
+                );
+                newBoardArray[y][x] = (
+                    <EachBox
+                        uniqKey={newBoardArray[y][x].props.uniqKey}
+                        isWhiteSquare={newBoardArray[y][x].props.isWhiteSquare}
+                    >
+                        {piece}
+                    </EachBox>
+                );
+                setBoardArray(newBoardArray);
+            }
+            else{
+                activePiece.style.removeProperty("top");
+                activePiece.style.removeProperty("left");
+            }
             setActivePiece(null);
         }
     }

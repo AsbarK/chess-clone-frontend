@@ -856,6 +856,11 @@ chalk@^4.0.0:
     ansi-styles "^4.1.0"
     supports-color "^7.1.0"
 
+chess.js@^1.0.0-beta.8:
+  version "1.0.0-beta.8"
+  resolved "https://registry.yarnpkg.com/chess.js/-/chess.js-1.0.0-beta.8.tgz#be5e73eabd49e272f41d26bc7fddc93cbcda912f"
+  integrity sha512-UngzUMXmexcQaQA/UEJuJj5vatEy34awYMD5YMOp/FW3HM7lqspp7ymYs5JAmquDq0WROtURRfSffoa/vrCCyw==
+
 chokidar@^3.5.3:
   version "3.6.0"
   resolved "https://registry.npmjs.org/chokidar/-/chokidar-3.6.0.tgz"
@@ -1903,6 +1908,7 @@ source-map-js@^1.2.0:
   integrity sha512-itJW8lvSA0TXEphiRoawsCksnlf8SyvmFzIhltqAHluXd88pkCd+cXJVHTDwdCr0IzwptSm035IHQktUu1QUMg==
 
 "string-width-cjs@npm:string-width@^4.2.0", string-width@^4.1.0:
+  name string-width-cjs
   version "4.2.3"
   resolved "https://registry.npmjs.org/string-width/-/string-width-4.2.3.tgz"
   integrity sha512-wKyQRQpjJ0sIp62ErSZdGsjMJWsap5oRNihHhu6G7JVO/9jIB6UyevL+tXuOqrng8j/cxKTWyWUwvSTriiZz/g==
