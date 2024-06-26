@@ -195,10 +195,10 @@ export default function ChessBoard({socket}:{socket:WebSocket}) {
             const newBoardArray = [...boardArray];
             const positionFrom = isBlack?Math.abs(8-(8-grabPosition.y)+1):Math.abs((8-grabPosition.y))
             const positionTo = isBlack?Math.abs(8-(8-y)+1):Math.abs((8-y))
-            const letterFrom = isBlack ? String.fromCharCode(96+grabPosition.x) : String.fromCharCode(97+grabPosition.x)
-            const letterTo = isBlack ? String.fromCharCode(96+x) : String.fromCharCode(97+x)
-            console.log(`${String.fromCharCode(97+grabPosition.x)}`,positionFrom)
-            console.log(`${String.fromCharCode(97+x)}`,positionTo)
+            const letterFrom = isBlack ? String.fromCharCode(96+(8-grabPosition.x)) : String.fromCharCode(97+grabPosition.x)
+            const letterTo = isBlack ? String.fromCharCode(96+(8-x)) : String.fromCharCode(97+x)
+            console.log(letterFrom,positionFrom)
+            console.log(letterTo,positionTo)
             // console.log(newBoardArray[y][x])
             if(isValidMove(presentFen,{"from":String(`${letterFrom}${positionFrom}`),"to":String(`${letterTo}${positionTo}`)})){
                 const piece = newBoardArray[grabPosition.y][grabPosition.x].props.children;
@@ -228,12 +228,6 @@ export default function ChessBoard({socket}:{socket:WebSocket}) {
                     "gameId": `${params.gameId}`
                 }))
 
-                socket.onmessage = (e)=>{
-                    const data = JSON.parse(e.data)
-                    console.log(data)
-                    setFen(data.payload.after)
-                    parseFEN(data.payload.after.split(" ")[0])
-                }
             }
             else{
                 activePiece.style.removeProperty("top");

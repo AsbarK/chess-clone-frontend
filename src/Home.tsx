@@ -4,7 +4,7 @@ export default function Home({socket}:{socket:WebSocket}) {
   return (
       <div className="flex justify-evenly items-center">
       <img src={"/chess-Image.png"} alt="Chess Image" width={400} height={400} className="p-4"/>
-        <button className="bg-green text-white p-3 rounded-md" onClick={()=>{
+        <button className="bg-chess-whiteBg text-white p-3 rounded-md" onClick={()=>{
             socket?.send(JSON.stringify({
                 "type":"init_game"
             }))
