@@ -1,18 +1,34 @@
 import React, { useState, ReactElement, useEffect, useRef } from "react";
 import EachBox from "./eachBox";
 import { isValidMove } from "./chess/chessValidation";
+import { useParams } from "react-router-dom";
 
 const GridSize = 81;
 
-export default function ChessBoard() {
+export default function ChessBoard({socket}:{socket:WebSocket}) {
     const [boardArray, setBoardArray] = useState<ReactElement[][]>([]);
     const [activePiece, setActivePiece] = useState<HTMLElement | null>(null);
     const [grabPosition, setGrabPosition] = useState<{ x: number, y: number } | null>(null);
     const chessBoardRef = useRef<HTMLDivElement>(null);
+    const [presentFen,setFen] = useState<string>('rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1')
+    const params = useParams()
 
     useEffect(() => {
-        parseFEN("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR");
-    }, []);
+        parseFEN(presentFen.split(" ")[0]);
+        socket.onmessage = (e) => {
+            const data = JSON.parse(e.data);
+            console.log(data);
+            if(data.type === "game_over"){
+                return
+            }
+            setFen(data.payload.after);
+            parseFEN(data.payload.after.split(" ")[0]);
+        };
+
+        return () => {
+            socket.onmessage = null;
+        };
+    }, [socket,presentFen]);
 
     function grabPiece(e: React.MouseEvent) {
         const element = e.target as HTMLElement;
@@ -79,7 +95,7 @@ export default function ChessBoard() {
             console.log(`${String.fromCharCode(97+x)}`,Math.abs(8-y))
             console.log(`${String.fromCharCode(97+grabPosition.x)}`,Math.abs(8-grabPosition.y))
             // console.log(newBoardArray[y][x])
-            if(isValidMove("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1",{"from":String(`${String.fromCharCode(97+grabPosition.x)}${Math.abs(8-grabPosition.y)}`),"to":String(`${String.fromCharCode(97+x)}${Math.abs(8-y)}`)})){
+            if(isValidMove(presentFen,{"from":String(`${String.fromCharCode(97+grabPosition.x)}${Math.abs(8-grabPosition.y)}`),"to":String(`${String.fromCharCode(97+x)}${Math.abs(8-y)}`)})){
                 const piece = newBoardArray[grabPosition.y][grabPosition.x].props.children;
                 newBoardArray[grabPosition.y][grabPosition.x] = (
                     <EachBox
@@ -96,7 +112,23 @@ export default function ChessBoard() {
                         {piece}
                     </EachBox>
                 );
+                // console.log(params)
                 setBoardArray(newBoardArray);
+                socket.send(JSON.stringify({
+                    "type":"move",
+                    "move":{
+                        "from":`${String.fromCharCode(97+grabPosition.x)}${Math.abs(8-grabPosition.y)}`,
+                        "to":`${String.fromCharCode(97+x)}${Math.abs(8-y)}`
+                    },
+                    "gameId": `${params.gameId}`
+                }))
+
+                socket.onmessage = (e)=>{
+                    const data = JSON.parse(e.data)
+                    console.log(data)
+                    setFen(data.payload.after)
+                    parseFEN(data.payload.after.split(" ")[0])
+                }
             }
             else{
                 activePiece.style.removeProperty("top");
