@@ -8,3 +8,8 @@ export const isValidMove = (fen:string,move:{from:string,to:string}) => {
         return false
     }
 }
+
+export const isCheck = (fen:string) => {
+    const chess = new Chess(fen)
+    return chess.isCheck()
+}

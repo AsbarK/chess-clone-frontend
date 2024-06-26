@@ -1,6 +1,6 @@
 import React, { useState, ReactElement, useEffect, useRef, useCallback } from "react";
 import EachBox from "./eachBox";
-import { isValidMove } from "./chess/chessValidation";
+import { isCheck, isValidMove } from "./chess/chessValidation";
 import { useLocation, useParams } from "react-router-dom";
 
 const GridSize = 81;
@@ -12,6 +12,8 @@ export default function ChessBoard({socket}:{socket:WebSocket}) {
     const chessBoardRef = useRef<HTMLDivElement>(null);
     const [presentFen,setFen] = useState<string>('rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1')
     const [isBlack,setIsBlack] = useState<boolean | null>(null)
+    const [isBlackCheck,setIsBlackCheck] = useState<boolean>(false)
+    const [isWhiteCheck,setIsWhiteCheck] = useState<boolean>(false)
     const params = useParams()
     const location = useLocation();
 
@@ -69,7 +71,7 @@ export default function ChessBoard({socket}:{socket:WebSocket}) {
                             >
                                 <div
                                     style={{ backgroundImage: `url(/assets/w${char}.png)` }}
-                                    className="w-[80px] h-[80px] bg-no-repeat bg-center cursor-grab active:cursor-grabbing"
+                                    className={`w-[80px] h-[80px] bg-no-repeat bg-center cursor-grab active:cursor-grabbing ${(char == 'K' && isWhiteCheck)?"animate-blinkTwice":""}`}
                                     id="chess-piece"
                                 ></div>
                             </EachBox>
@@ -88,8 +90,8 @@ export default function ChessBoard({socket}:{socket:WebSocket}) {
                                 isWhiteSquare={isWhiteSquare}
                             >
                                 <div
-                                    style={{ backgroundImage: `url(/assets/b${char.toUpperCase()}.png)` }}
-                                    className="w-[80px] h-[80px] bg-no-repeat bg-center cursor-grab active:cursor-grabbing"
+                                    style={{ backgroundImage: `url(/assets/b${char.toUpperCase()}.png)`}}
+                                    className={`w-[80px] h-[80px] bg-no-repeat bg-center cursor-grab active:cursor-grabbing ${(char == 'k' && isBlackCheck)?"animate-blinkTwice":""}`}
                                     id="chess-piece"
                                 ></div>
                             </EachBox>
@@ -126,7 +128,7 @@ export default function ChessBoard({socket}:{socket:WebSocket}) {
         }
 
         setBoardArray(board);
-    },[isBlack])
+    },[isBlack,isWhiteCheck,isBlackCheck])
     useEffect(()=>{
         parseFEN(presentFen.split(" ")[0]);
     },[parseFEN,presentFen])
@@ -150,6 +152,8 @@ export default function ChessBoard({socket}:{socket:WebSocket}) {
             // console.log(x,y)
             setGrabPosition({x:grabX,y:grabY})
             setActivePiece(element)
+            setIsBlackCheck(false)
+            setIsWhiteCheck(false)
         }
 
     }
@@ -227,11 +231,19 @@ export default function ChessBoard({socket}:{socket:WebSocket}) {
                     },
                     "gameId": `${params.gameId}`
                 }))
-
             }
             else{
                 activePiece.style.removeProperty("top");
                 activePiece.style.removeProperty("left");
+                if(isCheck(presentFen)){
+                    const turn =  presentFen.split(" ")[1]
+                    if(turn == "b"){
+                        setIsBlackCheck(true)
+                    }
+                    if(turn == "w"){
+                        setIsWhiteCheck(true)
+                    }
+                }
             }
             setActivePiece(null);
         }
