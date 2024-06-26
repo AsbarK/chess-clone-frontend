@@ -11,7 +11,7 @@ export default function Home({socket}:{socket:WebSocket}) {
             socket.onmessage = (e)=>{
                 const data = JSON.parse(e.data)
                 if(data.type === "init_game"){
-                    navigate(`/game/${data.gameId}`)
+                    data.payload.color === "b"?navigate(`/game/${data.gameId}?black=true`):navigate(`/game/${data.gameId}`)
                 }
             }
         }}>Play Online</button>

@@ -1,7 +1,7 @@
-import React, { useState, ReactElement, useEffect, useRef } from "react";
+import React, { useState, ReactElement, useEffect, useRef, useCallback } from "react";
 import EachBox from "./eachBox";
 import { isValidMove } from "./chess/chessValidation";
-import { useParams } from "react-router-dom";
+import { useLocation, useParams } from "react-router-dom";
 
 const GridSize = 81;
 
@@ -11,10 +11,12 @@ export default function ChessBoard({socket}:{socket:WebSocket}) {
     const [grabPosition, setGrabPosition] = useState<{ x: number, y: number } | null>(null);
     const chessBoardRef = useRef<HTMLDivElement>(null);
     const [presentFen,setFen] = useState<string>('rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1')
+    const [isBlack,setIsBlack] = useState<boolean | null>(null)
     const params = useParams()
+    const location = useLocation();
 
     useEffect(() => {
-        parseFEN(presentFen.split(" ")[0]);
+        
         socket.onmessage = (e) => {
             const data = JSON.parse(e.data);
             console.log(data);
@@ -22,123 +24,28 @@ export default function ChessBoard({socket}:{socket:WebSocket}) {
                 return
             }
             setFen(data.payload.after);
-            parseFEN(data.payload.after.split(" ")[0]);
         };
 
         return () => {
             socket.onmessage = null;
         };
-    }, [socket,presentFen]);
+    }, [socket]);
 
-    function grabPiece(e: React.MouseEvent) {
-        const element = e.target as HTMLElement;
-        const chessboard = chessBoardRef.current;
-        // console.log(element)
-        if (element.id === "chess-piece" && chessboard) {
-            const grabX = Math.floor((e.clientX - chessboard.offsetLeft) / GridSize);
-            const grabY = Math.abs(Math.floor((e.clientY - chessboard.offsetTop ) / GridSize));
-
-            element.style.position = "absolute";
-            // console.log(element)
-            // element.style.zIndex = "100"
-            // element.style.left = `${x}px`;
-            // element.style.top = `${y}px`;
-            // const x = e.clientX-(GridSize/2);
-            // const y = e.clientY-(GridSize/2);
-
-            // console.log(x,y)
-            setGrabPosition({x:grabX,y:grabY})
-            setActivePiece(element)
+    useEffect(() => {
+        const query = new URLSearchParams(location.search);
+        const black = query.get('black');
+        // console.log('Black:', black);
+        if(black === "true"){
+            setIsBlack(true)
+        }else{
+            setIsBlack(null)
         }
-
-    }
-
-    function movePiece(e: React.MouseEvent) {
-        const chessboard = chessBoardRef.current;
-        // console.log(activePiece,chessboard)
-        if (activePiece && chessboard) {
-            // console.log(e.clientX,e.clientY)
-            // console.log(activePiece.style.left,activePiece.style.top,activePiece)
-                const minX = chessboard.offsetLeft-(GridSize/4);
-                const minY = chessboard.offsetTop-(GridSize/4);
-                const maxX = chessboard.offsetLeft + chessboard.clientWidth - (GridSize*3/4);
-                const maxY = chessboard.offsetTop + chessboard.clientHeight - (GridSize*3/4);
-                const x = e.clientX - GridSize / 2;
-                const y = e.clientY - GridSize / 2;
-                activePiece.style.position = "absolute";
+    }, [location.search]);
     
-                if (x < minX) {
-                    activePiece.style.left = `${minX}px`;
-                } else if (x > maxX) {
-                    activePiece.style.left = `${maxX}px`;
-                } else {
-                    activePiece.style.left = `${x}px`;
-                }
-    
-                if (y < minY) {
-                    activePiece.style.top = `${minY}px`;
-                } else if (y > maxY) {
-                    activePiece.style.top = `${maxY}px`;
-                } else {
-                    activePiece.style.top = `${y}px`;
-                }
+    const parseFEN = useCallback((str: string) => {
+        if(isBlack){
+            str = reverseString(str)
         }
-    }
-
-    function releasePiece(e: React.MouseEvent) {
-        const chessboard = chessBoardRef.current;
-        if (activePiece && chessboard && grabPosition) {
-            const x = Math.floor((e.clientX - chessboard.offsetLeft) / GridSize);
-            const y = Math.abs(Math.floor((e.clientY - chessboard.offsetTop) / GridSize));
-
-            const newBoardArray = [...boardArray];
-            console.log(`${String.fromCharCode(97+x)}`,Math.abs(8-y))
-            console.log(`${String.fromCharCode(97+grabPosition.x)}`,Math.abs(8-grabPosition.y))
-            // console.log(newBoardArray[y][x])
-            if(isValidMove(presentFen,{"from":String(`${String.fromCharCode(97+grabPosition.x)}${Math.abs(8-grabPosition.y)}`),"to":String(`${String.fromCharCode(97+x)}${Math.abs(8-y)}`)})){
-                const piece = newBoardArray[grabPosition.y][grabPosition.x].props.children;
-                newBoardArray[grabPosition.y][grabPosition.x] = (
-                    <EachBox
-                        uniqKey={newBoardArray[grabPosition.y][grabPosition.x].props.uniqKey}
-                        isWhiteSquare={newBoardArray[grabPosition.y][grabPosition.x].props.isWhiteSquare}
-                    >
-                    </EachBox>
-                );
-                newBoardArray[y][x] = (
-                    <EachBox
-                        uniqKey={newBoardArray[y][x].props.uniqKey}
-                        isWhiteSquare={newBoardArray[y][x].props.isWhiteSquare}
-                    >
-                        {piece}
-                    </EachBox>
-                );
-                // console.log(params)
-                setBoardArray(newBoardArray);
-                socket.send(JSON.stringify({
-                    "type":"move",
-                    "move":{
-                        "from":`${String.fromCharCode(97+grabPosition.x)}${Math.abs(8-grabPosition.y)}`,
-                        "to":`${String.fromCharCode(97+x)}${Math.abs(8-y)}`
-                    },
-                    "gameId": `${params.gameId}`
-                }))
-
-                socket.onmessage = (e)=>{
-                    const data = JSON.parse(e.data)
-                    console.log(data)
-                    setFen(data.payload.after)
-                    parseFEN(data.payload.after.split(" ")[0])
-                }
-            }
-            else{
-                activePiece.style.removeProperty("top");
-                activePiece.style.removeProperty("left");
-            }
-            setActivePiece(null);
-        }
-    }
-
-    function parseFEN(str: string) {
         const rows = str.split('/');
         const board: ReactElement[][] = [];
 
@@ -219,7 +126,130 @@ export default function ChessBoard({socket}:{socket:WebSocket}) {
         }
 
         setBoardArray(board);
+    },[isBlack])
+    useEffect(()=>{
+        parseFEN(presentFen.split(" ")[0]);
+    },[parseFEN,presentFen])
+    
+    function grabPiece(e: React.MouseEvent) {
+        const element = e.target as HTMLElement;
+        const chessboard = chessBoardRef.current;
+        // console.log(element)
+        if (element.id === "chess-piece" && chessboard) {
+            const grabX = Math.floor((e.clientX - chessboard.offsetLeft) / GridSize);
+            const grabY = Math.abs(Math.floor((e.clientY - chessboard.offsetTop ) / GridSize));
+
+            element.style.position = "absolute";
+            // console.log(element)
+            // element.style.zIndex = "100"
+            // element.style.left = `${x}px`;
+            // element.style.top = `${y}px`;
+            // const x = e.clientX-(GridSize/2);
+            // const y = e.clientY-(GridSize/2);
+
+            // console.log(x,y)
+            setGrabPosition({x:grabX,y:grabY})
+            setActivePiece(element)
+        }
+
     }
+
+    function movePiece(e: React.MouseEvent) {
+        const chessboard = chessBoardRef.current;
+        // console.log(activePiece,chessboard)
+        if (activePiece && chessboard) {
+            // console.log(e.clientX,e.clientY)
+            // console.log(activePiece.style.left,activePiece.style.top,activePiece)
+                const minX = chessboard.offsetLeft-(GridSize/4);
+                const minY = chessboard.offsetTop-(GridSize/4);
+                const maxX = chessboard.offsetLeft + chessboard.clientWidth - (GridSize*3/4);
+                const maxY = chessboard.offsetTop + chessboard.clientHeight - (GridSize*3/4);
+                const x = e.clientX - GridSize / 2;
+                const y = e.clientY - GridSize / 2;
+                activePiece.style.position = "absolute";
+    
+                if (x < minX) {
+                    activePiece.style.left = `${minX}px`;
+                } else if (x > maxX) {
+                    activePiece.style.left = `${maxX}px`;
+                } else {
+                    activePiece.style.left = `${x}px`;
+                }
+    
+                if (y < minY) {
+                    activePiece.style.top = `${minY}px`;
+                } else if (y > maxY) {
+                    activePiece.style.top = `${maxY}px`;
+                } else {
+                    activePiece.style.top = `${y}px`;
+                }
+        }
+    }
+
+    function releasePiece(e: React.MouseEvent) {
+        const chessboard = chessBoardRef.current;
+        if (activePiece && chessboard && grabPosition) {
+            const x = Math.floor((e.clientX - chessboard.offsetLeft) / GridSize);
+            const y = Math.abs(Math.floor((e.clientY - chessboard.offsetTop) / GridSize));
+
+            const newBoardArray = [...boardArray];
+            const positionFrom = isBlack?Math.abs(8-(8-grabPosition.y)+1):Math.abs((8-grabPosition.y))
+            const positionTo = isBlack?Math.abs(8-(8-y)+1):Math.abs((8-y))
+            const letterFrom = isBlack ? String.fromCharCode(96+grabPosition.x) : String.fromCharCode(97+grabPosition.x)
+            const letterTo = isBlack ? String.fromCharCode(96+x) : String.fromCharCode(97+x)
+            console.log(`${String.fromCharCode(97+grabPosition.x)}`,positionFrom)
+            console.log(`${String.fromCharCode(97+x)}`,positionTo)
+            // console.log(newBoardArray[y][x])
+            if(isValidMove(presentFen,{"from":String(`${letterFrom}${positionFrom}`),"to":String(`${letterTo}${positionTo}`)})){
+                const piece = newBoardArray[grabPosition.y][grabPosition.x].props.children;
+                newBoardArray[grabPosition.y][grabPosition.x] = (
+                    <EachBox
+                        uniqKey={newBoardArray[grabPosition.y][grabPosition.x].props.uniqKey}
+                        isWhiteSquare={newBoardArray[grabPosition.y][grabPosition.x].props.isWhiteSquare}
+                    >
+                    </EachBox>
+                );
+                newBoardArray[y][x] = (
+                    <EachBox
+                        uniqKey={newBoardArray[y][x].props.uniqKey}
+                        isWhiteSquare={newBoardArray[y][x].props.isWhiteSquare}
+                    >
+                        {piece}
+                    </EachBox>
+                );
+                // console.log(params)
+                setBoardArray(newBoardArray);
+                socket.send(JSON.stringify({
+                    "type":"move",
+                    "move":{
+                        "from":`${letterFrom}${positionFrom}`,
+                        "to":`${letterTo}${positionTo}`
+                    },
+                    "gameId": `${params.gameId}`
+                }))
+
+                socket.onmessage = (e)=>{
+                    const data = JSON.parse(e.data)
+                    console.log(data)
+                    setFen(data.payload.after)
+                    parseFEN(data.payload.after.split(" ")[0])
+                }
+            }
+            else{
+                activePiece.style.removeProperty("top");
+                activePiece.style.removeProperty("left");
+            }
+            setActivePiece(null);
+        }
+    }
+    function reverseString(str:string){
+        const reversedString = 
+        str.split("").reduce((acc, char) => char + acc, "");
+        // console.log(reversedString);
+        return reversedString
+    }
+
+    
 
     return (
         <div className="bg-chess-blackBg w-[648px] h-[648px] " ref={chessBoardRef}>
